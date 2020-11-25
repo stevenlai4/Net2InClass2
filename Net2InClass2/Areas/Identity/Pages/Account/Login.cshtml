@@ -1,0 +1,138 @@
+﻿@page
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<h1>@ViewData["Title"]</h1>
+<div class="row">
+    <div class="col-md-4">
+        <section>
+            <form id="account" method="post">
+                <h4>Use a local account to log in.</h4>
+                <hr />
+                <div asp-validation-summary="All" class="text-danger"></div>
+                <div class="form-group">
+                    <label asp-for="Input.Email"></label>
+                    <input asp-for="Input.Email" class="form-control" />
+                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Input.Password"></label>
+                    <input asp-for="Input.Password" class="form-control" />
+                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox">
+                        <label asp-for="Input.RememberMe">
+                            <input asp-for="Input.RememberMe" />
+                            @Html.DisplayNameFor(m => m.Input.RememberMe)
+                        </label>
+                    </div>
+                </div>
+                <div id="ReCaptchaV2Container"></div><br />
+                <label id="lblCaptchaMessage"></label>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Log in</button>
+                </div>
+                <div class="form-group">
+                    <p>
+                        <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
+                    </p>
+                    <p>
+                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Register as a new user</a>
+                    </p>
+                </div>
+                @*<input type="hidden" name="captcha" id="captchaV3Input" value="" />*@
+            </form>
+        </section>
+    </div>
+    <div class="col-md-6 col-md-offset-2">
+        <section>
+            <h4>Use another service to log in.</h4>
+            <hr />
+            @{
+                if ((Model.ExternalLogins?.Count ?? 0) == 0)
+                {
+                    <div>
+                        <p>
+                            There are no external authentication services configured. See <a href="https://go.microsoft.com/fwlink/?LinkID=532715">this article</a>
+                            for details on setting up this ASP.NET application to support logging in via external services.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
+                        <div>
+                            <p>
+                                @foreach (var provider in Model.ExternalLogins)
+                                {
+                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                                }
+                            </p>
+                        </div>
+                    </form>
+                }
+            }
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <!-- async defer: Wait for HTML to load before Javascript-->
+    <script src="https://www.google.com/recaptcha/api.js?onload=renderRecaptcha&render=explicit" async defer></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript">
+           // Style and draw reCAPTCHA.
+        var renderRecaptcha = function () {
+            grecaptcha.render('ReCaptchaV2Container', {
+                'sitekey':  '@Model.CaptchaSiteKey',
+                'callback': reCaptchaCallback,
+                theme:      'light',    //light or dark
+                type:       'image',    // image or audio
+                size:       'normal'    //normal or compact
+            });
+        };
+
+        var reCaptchaCallback = function (response) {
+            // If reCAPTCHA is successful display it.
+            if (response !== '') {
+                jQuery('#lblCaptchaMessage').css('color', 'green').html('Success');
+                $(':input[type="submit"]').prop('disabled', false);
+            }
+        }
+
+        // Check reCAPTCHA validation.
+        jQuery('button[type="button"]').click(function (e) {
+            var message = 'Please check the checkbox';
+            if (typeof (grecaptcha) != 'undefined') {
+                var response = grecaptcha.getResponse();
+                (response.length === 0) ? (message = 'Captcha verification failed')
+                    : (message = 'Success!');
+            }
+            jQuery('#lblCaptchaMessage').html(message);
+            jQuery('#lblCaptchaMessage').css('color',
+                (message.toLowerCase() == 'success!') ? "green" : "red");
+        });
+
+        // Disable button when form loads.
+        $(document).ready(function () {
+            $(':input[type="submit"]').prop('disabled', true);
+        });
+    </script>
+
+    <!-- Google V3 Recaptcha -->
+    @*<script src="https://www.google.com/recaptcha/api.js?render=@Configuration["RecaptchaV3:SiteKey"]"></script>
+    <script>
+        grecaptcha.ready(function() {
+            grecaptcha.execute('@Configuration["RecaptchaV3:SiteKey"]', { action: 'login' }).then(function (token) {
+                $("#captchaV3Input").val(token);
+            });
+        });
+    </script>*@
+
+}
